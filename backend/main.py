@@ -23,6 +23,11 @@ app.add_middleware(
 
 BASE_DIR = Path(__file__).resolve().parent
 PREVIEWS_DIR = BASE_DIR / "previews"
+
+# 确保previews文件夹存在，不存在则创建
+if not PREVIEWS_DIR.exists():
+    PREVIEWS_DIR.mkdir(parents=True, exist_ok=True)
+
 app.mount("/previews", StaticFiles(directory=str(PREVIEWS_DIR)), name="previews")
 
 app.include_router(voice_design.router, prefix="/api/voice-design", tags=["音色创造"])
