@@ -35,8 +35,8 @@ class VoiceCloneService:
             if sample_rate == 0 or channels == 0 or bits_per_sample == 0:
                 raise ValueError("音频文件元数据异常")
             duration = data_size / (sample_rate * channels * (bits_per_sample // 8))
-            if duration < 3.0:
-                raise ValueError("音频过短，请上传至少3秒的音频")
+            if duration < 1.0:
+                raise ValueError("音频过短，请上传至少1秒的音频")
         
         audio_data = file_path.read_bytes()
         base64_str = base64.b64encode(audio_data).decode()
@@ -66,7 +66,20 @@ class VoiceCloneService:
             )
             print(f"克隆接口状态码: {response.status_code}")
             print(f"克隆接口返回: {response.text[:500]}")
-            response.raise_for_status()
+            
+            if response.status_code != 200:
+                try:
+                    error_data = response.json()
+                    error_code = error_data.get("code", "")
+                    error_msg = error_data.get("message", "")
+                    
+                    if "Audio.PreprocessError" in error_code or "No segments meet" in error_msg:
+                        raise ValueError("音频有效时长不足，请确保录音时长超过5秒且声音清晰（去除静音后需满足时长要求）")
+                    
+                    raise ValueError(f"克隆失败: {error_msg}")
+                except json.JSONDecodeError:
+                    response.raise_for_status()
+            
             result = response.json()
             
             voice_name = result["output"]["voice"]
@@ -86,8 +99,10 @@ class VoiceCloneService:
                 "created_at": result.get("created_at", "")
             }
             
+        except ValueError as e:
+            raise e
         except requests.exceptions.RequestException as e:
-            raise Exception(f"声音克隆失败: {e}; 响应: {response.text if 'response' in locals() else 'N/A'}")
+            raise Exception(f"网络请求失败: {e}")
         except Exception as e:
             raise Exception(f"发生错误: {e}")
     

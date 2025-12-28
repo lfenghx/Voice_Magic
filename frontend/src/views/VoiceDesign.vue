@@ -22,6 +22,16 @@
               :rows="3"
               placeholder="例如：温柔的女声，音色甜美，语速适中"
             />
+            <div style="margin-top: 10px;">
+              <el-button
+                type="primary"
+                @click="optimizePrompt"
+                :loading="optimizing"
+                size="small"
+              >
+                AI润色
+              </el-button>
+            </div>
           </el-form-item>
           
           <el-form-item label="预览文本">
@@ -173,6 +183,7 @@ const audioUrl = ref('')
 const synthesizing = ref(false)
 const settingsVisible = ref(false)
 const audioRefs = ref({})
+const optimizing = ref(false)
 
 const designVoices = computed(() => voiceStore.designVoices)
 const loading = computed(() => voiceStore.loading)
@@ -181,7 +192,7 @@ const deleteDesignVoice = voiceStore.deleteDesignVoice
 const loadDesignVoices = voiceStore.loadDesignVoices
 
 const createWavUrl = (chunks) => {
-  const gain = 1.8
+  const gain = 5.0 // 增加增益倍数，原为 1.8
   const total = chunks.reduce((n, c) => n + atob(c).length, 0)
   const raw = new Uint8Array(total)
   let offset = 0
@@ -247,6 +258,28 @@ const toSlug = async (s) => {
   } catch {
     const ascii = (s || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').substring(0, 16)
     return ascii || `v${Date.now()}`
+  }
+}
+
+const optimizePrompt = async () => {
+  if (!form.value.voice_prompt) {
+    ElMessage.warning('请先输入音色描述')
+    return
+  }
+  
+  optimizing.value = true
+  
+  try {
+    const response = await api.post('/voice-design/optimize-prompt', {
+      prompt: form.value.voice_prompt
+    })
+    
+    form.value.voice_prompt = response.optimized_prompt
+    ElMessage.success('提示词优化成功')
+  } catch (error) {
+    ElMessage.error('提示词优化失败: ' + error.message)
+  } finally {
+    optimizing.value = false
   }
 }
 
@@ -439,10 +472,35 @@ h2 {
   color: #999;
 }
 
+.voices-section {
+  max-height: 500px;
+  overflow-y: auto;
+  padding-right: 10px;
+}
+
 .voices-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
   gap: 15px;
+  padding-bottom: 10px;
+}
+
+.voices-section::-webkit-scrollbar {
+  width: 8px;
+}
+
+.voices-section::-webkit-scrollbar-track {
+  background: rgba(255, 154, 158, 0.2);
+  border-radius: 4px;
+}
+
+.voices-section::-webkit-scrollbar-thumb {
+  background: rgba(255, 100, 100, 0.5);
+  border-radius: 4px;
+}
+
+.voices-section::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 100, 100, 0.7);
 }
 
 .voice-card {

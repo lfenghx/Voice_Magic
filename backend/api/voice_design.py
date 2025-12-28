@@ -52,3 +52,14 @@ async def delete_voice(voice_name: str):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+class OptimizePromptRequest(BaseModel):
+    prompt: str
+
+@router.post("/optimize-prompt", response_model=dict)
+async def optimize_prompt(request: OptimizePromptRequest):
+    try:
+        optimized_prompt = voice_design_service.optimize_prompt(request.prompt)
+        return {"optimized_prompt": optimized_prompt}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

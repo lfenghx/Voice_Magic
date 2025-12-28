@@ -13,6 +13,15 @@
     
     <div class="content">
       <div class="record-section" v-loading="loading" element-loading-text="正在处理...">
+        <el-alert
+          v-if="!isSecureContext"
+          title="录音功能不可用"
+          type="error"
+          description="检测到当前环境不安全（如非 Localhost 的 HTTP 连接），浏览器已禁用录音功能。请使用 Localhost 或 HTTPS 访问。"
+          show-icon
+          :closable="false"
+          style="margin-bottom: 20px;"
+        />
         <h2>录制声音</h2>
         <el-form :model="form" label-width="100px">
           <el-form-item label="克隆来源">
@@ -193,6 +202,7 @@ const recordedUrl = ref('')
 let mediaRecorder = null
 let audioChunks = []
 const cloneMode = ref('record')
+const isSecureContext = ref(true)
 
 const selectedVoice = ref('')
 const ttsText = ref('')
@@ -207,7 +217,7 @@ const deleteCloneVoice = voiceStore.deleteCloneVoice
 const loadCloneVoices = voiceStore.loadCloneVoices
 
 const createWavUrl = (chunks) => {
-  const gain = 1.8
+  const gain = 5.0 // 增加增益倍数，原为 1.8
   const total = chunks.reduce((n, c) => n + atob(c).length, 0)
   const raw = new Uint8Array(total)
   let offset = 0
@@ -385,35 +395,67 @@ const startRecording = async () => {
       ElMessage.warning('当前为上传模式，请切换到录音克隆')
       return
     }
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-    mediaRecorder = new MediaRecorder(stream)
-    audioChunks = []
     
-    mediaRecorder.ondataavailable = (event) => {
-      audioChunks.push(event.data)
+    // 检查是否为安全上下文（录音功能在非安全上下文如 HTTP + IP 地址下不可用）
+    if (window.isSecureContext === false) {
+      ElMessage.error('录音功能受浏览器安全策略限制，请使用 http://localhost:3001 或 https 协议访问')
+      return
     }
     
-    mediaRecorder.onstop = () => {
-      recordedBlob.value = new Blob(audioChunks, { type: 'audio/wav' })
-      recordedUrl.value = URL.createObjectURL(recordedBlob.value)
-      stream.getTracks().forEach(track => track.stop())
-    }
-    
-    mediaRecorder.start()
-    isRecording.value = true
-    remainingTime.value = recordDuration.value
-    
-    const timer = setInterval(() => {
-      remainingTime.value--
-      if (remainingTime.value <= 0) {
-        clearInterval(timer)
-        stopRecording()
+    // 检查浏览器是否支持mediaDevices API
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      // 处理不支持的情况
+      if (navigator.getUserMedia) {
+        // 旧版浏览器支持方式
+        navigator.getUserMedia({ audio: true }, 
+          (stream) => {
+            handleMediaStream(stream)
+          },
+          (error) => {
+            ElMessage.error('无法访问麦克风: ' + error.message)
+          }
+        )
+      } else {
+        ElMessage.error('您的浏览器不支持录音功能，请尝试使用最新版本的Chrome、Firefox或Edge浏览器')
       }
-    }, 1000)
+      return
+    }
+    
+    // 现代浏览器支持方式
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+    handleMediaStream(stream)
     
   } catch (error) {
     ElMessage.error('无法访问麦克风: ' + error.message)
   }
+}
+
+// 处理媒体流的辅助函数
+const handleMediaStream = (stream) => {
+  mediaRecorder = new MediaRecorder(stream)
+  audioChunks = []
+  
+  mediaRecorder.ondataavailable = (event) => {
+    audioChunks.push(event.data)
+  }
+  
+  mediaRecorder.onstop = () => {
+    recordedBlob.value = new Blob(audioChunks, { type: 'audio/wav' })
+    recordedUrl.value = URL.createObjectURL(recordedBlob.value)
+    stream.getTracks().forEach(track => track.stop())
+  }
+  
+  mediaRecorder.start()
+  isRecording.value = true
+  remainingTime.value = recordDuration.value
+  
+  const timer = setInterval(() => {
+    remainingTime.value--
+    if (remainingTime.value <= 0) {
+      clearInterval(timer)
+      stopRecording()
+    }
+  }, 1000)
 }
 
 const stopRecording = () => {
@@ -430,8 +472,8 @@ const cloneVoice = async () => {
   }
   
   const seconds = await measureBlobDuration(recordedBlob.value)
-  if (seconds < 3) {
-    ElMessage.error('音频过短，请上传至少3秒的音频')
+  if (seconds < 1) {
+    ElMessage.error('音频过短，请上传至少1秒的音频')
     return
   }
   
@@ -449,7 +491,8 @@ const cloneVoice = async () => {
     recordedBlob.value = null
     recordedUrl.value = ''
   } catch (error) {
-    ElMessage.error('声音克隆失败: ' + error.message)
+    const msg = error.response?.data?.detail || error.message || '未知错误'
+    ElMessage.error('声音克隆失败: ' + msg)
   }
 }
 
@@ -532,6 +575,7 @@ const synthesize = async () => {
 }
 
 onMounted(() => {
+  isSecureContext.value = window.isSecureContext
   loadCloneVoices()
 })
 </script>
