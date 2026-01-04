@@ -1,10 +1,13 @@
 import os
 import json
 from pathlib import Path
+from .paths import get_data_dir
 
 class VoiceStorage:
     def __init__(self, storage_file):
-        self.storage_file = storage_file
+        data_dir = get_data_dir()
+        p = Path(storage_file)
+        self.storage_file = str(p if p.is_absolute() else (data_dir / p.name))
         self.voices = self._load_voices()
     
     def _load_voices(self):
@@ -58,7 +61,7 @@ class VoiceStorage:
 
 class SettingsStorage:
     def __init__(self):
-        self.settings_file = "data/settings.json"
+        self.settings_file = str(get_data_dir() / "settings.json")
         self.settings = self._load_settings()
     
     def _load_settings(self):

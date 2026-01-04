@@ -9,6 +9,11 @@ export default defineConfig({
       "@": resolve(__dirname, "src"),
     },
   },
+  build: {
+    outDir: "../backend/dist",
+    assetsDir: "assets",
+    publicPath: "/",
+  },
   server: {
     port: 3001,
     host: "0.0.0.0",

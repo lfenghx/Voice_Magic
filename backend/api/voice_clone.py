@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException, UploadFile, File, Form
 from pydantic import BaseModel
 from typing import List, Optional
 from services.voice_clone_service import VoiceCloneService
+from utils.paths import get_uploads_dir
 
 router = APIRouter()
 voice_clone_service = VoiceCloneService()
@@ -25,10 +26,7 @@ async def clone_voice(
     display_name: Optional[str] = Form(None)
 ):
     try:
-        from pathlib import Path
-        BASE_DIR = Path(__file__).resolve().parent.parent
-        upload_dir = BASE_DIR / "uploads"
-        upload_dir.mkdir(exist_ok=True)
+        upload_dir = get_uploads_dir()
         
         file_path = upload_dir / audio_file.filename
         with open(file_path, "wb") as f:

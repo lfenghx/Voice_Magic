@@ -323,7 +323,7 @@ const deleteVoice = async (voiceName) => {
 }
 
 const getPreviewUrl = (previewFile) => {
-  return `/previews/${previewFile}`
+  return `/previews/${encodeURIComponent(previewFile)}`
 }
 
 const previewVoice = (voice) => {

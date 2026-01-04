@@ -4,6 +4,7 @@ import base64
 import requests
 from dotenv import load_dotenv
 from utils.storage import VoiceStorage
+from utils.paths import get_previews_dir
 
 load_dotenv()
 
@@ -82,9 +83,9 @@ class VoiceDesignService:
                     print(f"预览音频增益处理失败: {e}")
                 
                 preview_filename = f"{voice_name}_preview.wav"
-                preview_file = f"previews/{preview_filename}"
-                os.makedirs("previews", exist_ok=True)
-                with open(preview_file, "wb") as f:
+                previews_dir = get_previews_dir()
+                preview_path = previews_dir / preview_filename
+                with open(preview_path, "wb") as f:
                     f.write(audio_bytes)
                 
                 self.storage.add_voice(
