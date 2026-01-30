@@ -180,7 +180,6 @@ const selectedVoice = ref('')
 const ttsText = ref('')
 const audioUrl = ref('')
 const synthesizing = ref(false)
-const settingsVisible = ref(false)
 const audioRefs = ref({})
 const optimizing = ref(false)
 
@@ -242,8 +241,6 @@ const createWavUrl = (chunks) => {
 const goBack = () => {
   router.push('/')
 }
-
-const showSettings = () => {}
 
 const toSlug = async (s) => {
   const isAscii = /^[a-zA-Z0-9\-\s]+$/.test(s || '')

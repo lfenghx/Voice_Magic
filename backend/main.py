@@ -4,13 +4,24 @@ from fastapi.staticfiles import StaticFiles
 import uvicorn
 import os
 from pathlib import Path
-
+from dotenv import load_dotenv
 from api import voice_design, voice_clone, tts, utils
+from contextlib import asynccontextmanager
+
+
+load_dotenv()
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # 在应用启动时初始化 TTS 服务（仅在 worker 进程中运行）
+    tts.init_tts_service()
+    yield
 
 app = FastAPI(
     title="元视界AI妙妙屋—声音魔法 API",
     description="基于千问3 TTS 的音色创造和音色克隆服务",
-    version="1.0.0"
+    version="1.0.0",
+    lifespan=lifespan
 )
 
 app.add_middleware(

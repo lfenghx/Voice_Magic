@@ -8,9 +8,9 @@
         <h1 class="brand-title">元视界AI妙妙屋—魔法语音</h1>
         <div class="sub-title">音色克隆</div>
       </div>
-      
+
     </div>
-    
+
     <div class="content">
       <div class="record-section" v-loading="loading" element-loading-text="正在处理...">
         <el-alert
@@ -39,14 +39,14 @@
             />
             <span style="margin-left: 10px">秒</span>
           </el-form-item>
-          
+
           <el-form-item label="显示名称">
             <el-input
               v-model="form.display_name"
               placeholder="例如：猫娘、老板、客服小姐姐"
             />
           </el-form-item>
-          
+
           <template v-if="cloneMode === 'upload'">
             <el-form-item label="上传音频">
               <el-upload
@@ -62,7 +62,7 @@
               </el-upload>
             </el-form-item>
           </template>
-          
+
           <el-form-item>
             <el-button
               v-if="cloneMode === 'record' && !isRecording"
@@ -84,7 +84,7 @@
             </el-button>
           </el-form-item>
         </el-form>
-        
+
         <div v-if="recordedBlob" class="recorded-audio">
           <h3>音频预览</h3>
           <audio :src="recordedUrl" controls />
@@ -98,7 +98,7 @@
           </el-button>
         </div>
       </div>
-      
+
       <div class="voices-section" v-loading="loading" element-loading-text="正在加载音色...">
         <h2>已克隆的音色</h2>
         <div v-if="cloneVoices.length === 0" class="empty-state">
@@ -127,7 +127,7 @@
           </div>
         </div>
       </div>
-      
+
       <div class="tts-section" v-loading="synthesizing" element-loading-text="正在合成语音...">
         <h2>语音合成</h2>
         <el-form label-width="100px">
@@ -145,7 +145,7 @@
               />
             </el-select>
           </el-form-item>
-          
+
           <el-form-item label="输入文本">
             <el-input
               v-model="ttsText"
@@ -154,7 +154,7 @@
               placeholder="请输入要转换的文字"
             />
           </el-form-item>
-          
+
           <el-form-item>
             <el-button
               type="primary"
@@ -167,14 +167,13 @@
             </el-button>
           </el-form-item>
         </el-form>
-        
+
         <div v-if="audioUrl" class="audio-player">
           <audio :src="audioUrl" controls autoplay />
         </div>
       </div>
     </div>
-    
-    
+
   </div>
 </template>
 
@@ -395,13 +394,13 @@ const startRecording = async () => {
       ElMessage.warning('当前为上传模式，请切换到录音克隆')
       return
     }
-    
+
     // 检查是否为安全上下文（录音功能在非安全上下文如 HTTP + IP 地址下不可用）
     if (window.isSecureContext === false) {
       ElMessage.error('录音功能受浏览器安全策略限制，请使用 http://localhost:3001 或 https 协议访问')
       return
     }
-    
+
     // 检查浏览器是否支持mediaDevices API
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       // 处理不支持的情况
@@ -420,11 +419,11 @@ const startRecording = async () => {
       }
       return
     }
-    
+
     // 现代浏览器支持方式
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
     handleMediaStream(stream)
-    
+
   } catch (error) {
     ElMessage.error('无法访问麦克风: ' + error.message)
   }
@@ -434,21 +433,21 @@ const startRecording = async () => {
 const handleMediaStream = (stream) => {
   mediaRecorder = new MediaRecorder(stream)
   audioChunks = []
-  
+
   mediaRecorder.ondataavailable = (event) => {
     audioChunks.push(event.data)
   }
-  
+
   mediaRecorder.onstop = () => {
     recordedBlob.value = new Blob(audioChunks, { type: 'audio/wav' })
     recordedUrl.value = URL.createObjectURL(recordedBlob.value)
     stream.getTracks().forEach(track => track.stop())
   }
-  
+
   mediaRecorder.start()
   isRecording.value = true
   remainingTime.value = recordDuration.value
-  
+
   const timer = setInterval(() => {
     remainingTime.value--
     if (remainingTime.value <= 0) {
@@ -470,19 +469,19 @@ const cloneVoice = async () => {
     ElMessage.warning('请先选择或录制音频')
     return
   }
-  
+
   const seconds = await measureBlobDuration(recordedBlob.value)
   if (seconds < 1) {
     ElMessage.error('音频过短，请上传至少1秒的音频')
     return
   }
-  
+
   const formData = new FormData()
   const wavBlob = await convertToWav(recordedBlob.value)
   formData.append('audio_file', wavBlob, 'recorded.wav')
   formData.append('preferred_name', await toSlug(form.value.display_name || form.value.preferred_name))
   formData.append('display_name', form.value.display_name || form.value.preferred_name || '')
-  
+
   try {
     await cloneVoiceApi(formData)
     ElMessage.success('声音克隆成功')
@@ -517,26 +516,26 @@ const synthesize = async () => {
     ElMessage.warning('请选择音色')
     return
   }
-  
+
   if (!ttsText.value) {
     ElMessage.warning('请输入文本')
     return
   }
-  
+
   synthesizing.value = true
   audioUrl.value = ''
-  
+
   try {
     const wsUrl = `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws/tts/streaming`
     const ws = new WebSocket(wsUrl)
-    
+
     ws.onopen = () => {
       ws.send(JSON.stringify({
         action: 'connect',
         voice_type: 'clone',
         voice_name: selectedVoice.value
       }))
-      
+
       setTimeout(() => {
         ws.send(JSON.stringify({
           action: 'synthesize',
@@ -544,12 +543,12 @@ const synthesize = async () => {
         }))
       }, 500)
     }
-    
+
     let audioChunks = []
-    
+
     ws.onmessage = (event) => {
       const data = JSON.parse(event.data)
-      
+
       if (data.type === 'audio') {
         audioChunks.push(data.data)
       } else if (data.type === 'finished') {
@@ -562,12 +561,12 @@ const synthesize = async () => {
         ws.close()
       }
     }
-    
+
     ws.onerror = () => {
       ElMessage.error('WebSocket连接失败')
       synthesizing.value = false
     }
-    
+
   } catch (error) {
     ElMessage.error('语音合成失败: ' + error.message)
     synthesizing.value = false

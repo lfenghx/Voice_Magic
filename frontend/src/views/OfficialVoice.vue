@@ -65,12 +65,24 @@
       <div class="tts-section" v-loading="synthesizing" element-loading-text="正在合成语音...">
         <h2>语音合成</h2>
         <el-form label-width="100px">
-          <el-form-item label="当前音色">
-            <el-tag v-if="selectedVoice" type="success" size="large" effect="dark">
-               {{ selectedVoiceInfo?.icon }} {{ selectedVoiceInfo?.displayName }}
-            </el-tag>
-            <span v-else style="color: #999;">未选择</span>
-          </el-form-item>
+          <el-row :gutter="20">
+            <el-col :span="4">
+              <el-form-item label="当前音色">
+                <el-tag v-if="selectedVoice" type="success" size="large" effect="dark">
+                  {{ selectedVoiceInfo?.icon }} {{ selectedVoiceInfo?.displayName }}
+                </el-tag>
+                <span v-else style="color: #999;">未选择</span>
+              </el-form-item>
+            </el-col>
+            <el-col :span="20" v-if="!remote_tts_env">
+              <el-form-item label="控制指令">
+                <el-input
+                  v-model="ttsInstruct"
+                  placeholder="例如：用特别愤怒的语气说（仅本地模型支持）"
+                />
+              </el-form-item>
+            </el-col>
+          </el-row>
 
           <el-form-item label="输入文本">
             <el-input
@@ -110,7 +122,7 @@ import { ArrowLeft } from '@element-plus/icons-vue'
 
 const router = useRouter()
 
-const tts_env = import.meta.env.VITE_QWEN3_TTS_ENV === 'aliyun'
+const remote_tts_env = import.meta.env.VITE_QWEN3_TTS_ENV === 'aliyun'
 
 const aliyunVoices = [
   { name: 'cherry', displayName: '芊悦', description: '阳光积极、亲切自然小姐姐', icon: '👩', scenarios: '活力旁白、短视频、对话', lang: '多语言' },
@@ -137,7 +149,7 @@ const aliyunVoices = [
 ]
 
 const localVoices = [
-  { name: 'vivian', displayName: 'Vivian', description: '明快飒爽的年轻女声', icon: '👩', scenarios: '活力旁白、短视频、对话', lang: '中文' },
+  { name: 'vivian', displayName: 'Vivian', description: '有点急躁的年轻女声', icon: '👩', scenarios: '场景配音、情绪化表达', lang: '中文' },
   { name: 'serena', displayName: 'Serena', description: '温柔知性的年轻女声', icon: '🌙', scenarios: '暖心解说、有声书、客服', lang: '中文' },
   { name: 'uncle_fu', displayName: 'Uncle_Fu', description: '低沉浑厚的成熟男声', icon: '🧔‍♂️', scenarios: '纪录片、故事讲述、稳重旁白', lang: '中文' },
   { name: 'dylan', displayName: 'Dylan', description: '清朗自然的北京少男', icon: '👦', scenarios: '生活Vlog、京味儿对话、朝气男声', lang: '中文 (北京话)' },
@@ -148,10 +160,11 @@ const localVoices = [
   { name: 'sohee', displayName: 'Sohee', description: '情感丰富的温暖韩语女声', icon: '🍯', scenarios: '韩语配音、剧情解说、柔美旁白', lang: '韩语' }
 ]
 
-const officialVoices = ref(tts_env ? aliyunVoices : localVoices)
+const officialVoices = ref(remote_tts_env ? aliyunVoices : localVoices)
 
 const selectedVoice = ref('')
 const ttsText = ref('')
+const ttsInstruct = ref('')
 const audioUrl = ref('')
 const synthesizing = ref(false)
 
@@ -244,7 +257,8 @@ const synthesize = async () => {
       setTimeout(() => {
         ws.send(JSON.stringify({
           action: 'synthesize',
-          text: ttsText.value
+          text: ttsText.value,
+          instruct: ttsInstruct.value
         }))
       }, 500)
     }
