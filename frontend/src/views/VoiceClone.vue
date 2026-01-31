@@ -119,20 +119,39 @@
             :key="voice.voice_name"
             class="voice-card"
             :class="{ active: selectedVoice === voice.voice_name }"
+            :data-voice="voice.voice_name"
             @click="selectVoice(voice)"
           >
             <div class="voice-header">
               <h3>{{ voice.display_name || voice.voice_name }}</h3>
-              <el-button
-                type="danger"
-                size="small"
-                circle
-                @click.stop="deleteVoice(voice.voice_name)"
-              >
-                <el-icon><Delete /></el-icon>
-              </el-button>
+              <div class="voice-actions">
+                <el-button
+                  type="primary"
+                  size="small"
+                  circle
+                  @click.stop="playVoiceAudio(voice)"
+                >
+                  <el-icon><VideoPlay /></el-icon>
+                </el-button>
+                <el-button
+                  type="danger"
+                  size="small"
+                  circle
+                  @click.stop="deleteVoice(voice.voice_name)"
+                >
+                  <el-icon><Delete /></el-icon>
+                </el-button>
+              </div>
             </div>
+            <p class="voice-ref-text">{{ voice.ref_text || '' }}</p>
             <p class="voice-time">创建时间: {{ voice.created_at }}</p>
+            <audio
+              v-if="voice.audio_file"
+              :ref="el => { if (el) voiceAudioRefs[voice.voice_name] = el }"
+              :src="getAudioUrl(voice.audio_file)"
+              controls
+              class="preview-audio"
+            />
           </div>
         </div>
       </div>
@@ -191,7 +210,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { ArrowLeft, Delete, Microphone, VideoPause } from '@element-plus/icons-vue'
+import { ArrowLeft, Delete, Microphone, VideoPause, VideoPlay } from '@element-plus/icons-vue'
 import { useVoiceStore } from '@/stores/voice'
 import api from '@/api'
 
@@ -221,6 +240,7 @@ const ref_text = ref('')
 const ttsText = ref('')
 const audioUrl = ref('')
 const synthesizing = ref(false)
+const voiceAudioRefs = ref({})
 
 const cloneVoices = computed(() => voiceStore.cloneVoices)
 const loading = computed(() => voiceStore.loading)
@@ -511,6 +531,21 @@ const selectVoice = (voice) => {
   ref_text.value = voice.ref_text
 }
 
+const getAudioUrl = (audioFile) => {
+  return `/uploads/${audioFile}`
+}
+
+const playVoiceAudio = (voice) => {
+  const audio = voiceAudioRefs.value[voice.voice_name]
+  if (audio) {
+    audio.play().catch(error => {
+      ElMessage.error('播放失败: ' + error.message)
+    })
+  } else {
+    ElMessage.error('找不到音频文件')
+  }
+}
+
 const handleVoiceChange = (voiceName) => {
   const voice = cloneVoices.value.find(v => v.voice_name === voiceName)
   if (voice) {
@@ -662,10 +697,35 @@ h2 {
   color: #999;
 }
 
+.voices-section {
+  max-height: 500px;
+  overflow-y: auto;
+  padding-right: 10px;
+}
+
 .voices-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
   gap: 15px;
+  padding-bottom: 10px;
+}
+
+.voices-section::-webkit-scrollbar {
+  width: 8px;
+}
+
+.voices-section::-webkit-scrollbar-track {
+  background: rgba(255, 154, 158, 0.2);
+  border-radius: 4px;
+}
+
+.voices-section::-webkit-scrollbar-thumb {
+  background: rgba(255, 100, 100, 0.5);
+  border-radius: 4px;
+}
+
+.voices-section::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 100, 100, 0.7);
 }
 
 .voice-card {
@@ -699,7 +759,17 @@ h2 {
   color: #333;
 }
 
-.voice-desc {
+.voice-actions {
+  display: flex;
+  gap: 5px;
+}
+
+.preview-audio {
+  width: 100%;
+  margin-top: 10px;
+}
+
+.voice-ref-text {
   font-size: 14px;
   color: #666;
   margin-bottom: 5px;

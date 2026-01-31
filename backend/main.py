@@ -37,12 +37,16 @@ app.add_middleware(
 
 BASE_DIR = Path(__file__).resolve().parent
 PREVIEWS_DIR = BASE_DIR / "previews"
+UPLOADS_DIR = BASE_DIR / "uploads"
 
-# 确保previews文件夹存在，不存在则创建
+# 确保文件夹存在
 if not PREVIEWS_DIR.exists():
     PREVIEWS_DIR.mkdir(parents=True, exist_ok=True)
+if not UPLOADS_DIR.exists():
+    UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
 
 app.mount("/previews", StaticFiles(directory=str(PREVIEWS_DIR)), name="previews")
+app.mount("/uploads", StaticFiles(directory=str(UPLOADS_DIR)), name="uploads")
 
 app.include_router(voice_design.router, prefix="/api/voice-design", tags=["音色创造"])
 app.include_router(voice_clone.router, prefix="/api/voice-clone", tags=["音色克隆"])
@@ -63,7 +67,7 @@ if STATIC_DIR.exists():
     @app.get("/{full_path:path}")
     async def serve_spa(full_path: str):
         # 排除 API、WS 和预览路径，让它们由各自的路由处理器处理或返回 404
-        if any(full_path.startswith(prefix) for prefix in ["api/", "ws/", "previews/"]):
+        if any(full_path.startswith(prefix) for prefix in ["api/", "ws/", "previews/", "uploads/"]):
             from fastapi.responses import JSONResponse
             return JSONResponse(status_code=404, content={"detail": "Not Found"})
 

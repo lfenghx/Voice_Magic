@@ -43,6 +43,18 @@ RUN ln -sf /usr/bin/python3.11 /usr/bin/python \
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uv/bin/
 ENV PATH="/uv/bin:${PATH}"
 
+# 设置 Hugging Face 缓存目录
+ENV HF_HOME=/app/models_cache
+
+# 安装 huggingface_hub 和 hf_transfer 用于加速在构建阶段下载模型
+RUN uv pip install --no-cache huggingface_hub[hf_transfer] --system
+ENV HF_HUB_ENABLE_HF_TRANSFER=1
+
+# 在构建期间下载模型，避免运行时下载
+RUN huggingface-cli download Qwen/Qwen3-TTS-12Hz-1.7B-Base
+RUN huggingface-cli download Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice
+RUN huggingface-cli download Qwen/Qwen3-TTS-12Hz-1.7B-VoiceDesign
+
 # 复制后端依赖文件
 COPY backend/requirements.txt ./
 
@@ -73,17 +85,6 @@ COPY --from=frontend-builder /app/frontend/dist /app/static
 # 设置本地运行相关的环境变量
 ENV QWEN3_TTS_ENV=local
 ENV PORT=8000
-# 设置 Hugging Face 缓存目录
-ENV HF_HOME=/app/models_cache
-
-# 安装 huggingface_hub 和 hf_transfer 用于加速在构建阶段下载模型
-RUN uv pip install --no-cache huggingface_hub[hf_transfer] --system
-ENV HF_HUB_ENABLE_HF_TRANSFER=1
-
-# 在构建期间下载模型，避免运行时下载
-RUN huggingface-cli download Qwen/Qwen3-TTS-12Hz-1.7B-Base
-RUN huggingface-cli download Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice
-RUN huggingface-cli download Qwen/Qwen3-TTS-12Hz-1.7B-VoiceDesign
 
 # 暴露端口
 EXPOSE 8000
