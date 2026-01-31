@@ -1,17 +1,15 @@
 import os
 import base64
 import requests
-from dotenv import load_dotenv
-from utils.storage import VoiceStorage
+from .design_service import DesignServiceBase
 
-load_dotenv()
 
-class VoiceDesignService:
+class DesignServiceAliyun(DesignServiceBase):
     def __init__(self):
-        self.api_key = os.getenv("DASHSCOPE_API_KEY")
-        self.storage = VoiceStorage("data/voices.json")
-        self.voice_design_url = "https://dashscope.aliyuncs.com/api/v1/services/audio/tts/customization"
+        super().__init__()
 
+        self.api_key = os.getenv("DASHSCOPE_API_KEY")
+        self.voice_design_url = "https://dashscope.aliyuncs.com/api/v1/services/audio/tts/customization"
         self.target_model = "qwen3-tts-vd-realtime-2025-12-16"
 
     def create_custom_voice(self, voice_prompt, preview_text="你好，这是我的声音。", preferred_name=None, display_name=None):
@@ -90,7 +88,8 @@ class VoiceDesignService:
                     voice_name=voice_name,
                     description=voice_prompt,
                     display_name=display_name or preferred_name or voice_name,
-                    preview_file=preview_filename
+                    preview_file=preview_filename,
+                    ref_text=preview_text,
                 )
 
                 return {
@@ -112,13 +111,6 @@ class VoiceDesignService:
             import traceback
             traceback.print_exc()
             raise Exception(f"请求失败: {e}")
-
-    def list_voices(self):
-        voices = self.storage.list_voices()
-        return voices
-
-    def delete_voice(self, voice_name):
-        return self.storage.delete_voice(voice_name)
 
     def optimize_prompt(self, prompt):
         if not self.api_key:

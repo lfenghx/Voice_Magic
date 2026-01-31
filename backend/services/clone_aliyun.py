@@ -2,21 +2,20 @@ import os
 import json
 import base64
 import requests
-from dotenv import load_dotenv
-from utils.storage import VoiceStorage
 from pathlib import Path
 
-load_dotenv()
+from services.clone_service import CloneServiceBase
 
-class VoiceCloneService:
+
+class CloneServiceAliyun(CloneServiceBase):
     def __init__(self):
-        self.api_key = os.getenv("DASHSCOPE_API_KEY")
-        self.storage = VoiceStorage("data/cloned_voices.json")
-        self.customization_url = "https://dashscope.aliyuncs.com/api/v1/services/audio/tts/customization"
+        super().__init__()
 
+        self.api_key = os.getenv("DASHSCOPE_API_KEY")
+        self.customization_url = "https://dashscope.aliyuncs.com/api/v1/services/audio/tts/customization"
         self.target_model = "qwen3-tts-vc-realtime-2025-11-27"
 
-    def clone_voice(self, audio_file, preferred_name=None, display_name=None):
+    def clone_voice(self, audio_file, ref_text=None, preferred_name=None, display_name=None):
         if not self.api_key:
             raise ValueError("未找到API Key，请先配置")
 
@@ -88,7 +87,8 @@ class VoiceCloneService:
                 voice_name=voice_name,
                 description="录音克隆",
                 display_name=display_name or preferred_name or voice_name,
-                audio_file=audio_file
+                audio_file=audio_file,
+                ref_text=ref_text,
             )
 
             return {
@@ -96,6 +96,7 @@ class VoiceCloneService:
                 "description": "录音克隆",
                 "display_name": display_name or preferred_name or voice_name,
                 "audio_file": audio_file,
+                "ref_text": ref_text,
                 "created_at": result.get("created_at", "")
             }
 
@@ -105,10 +106,3 @@ class VoiceCloneService:
             raise Exception(f"网络请求失败: {e}")
         except Exception as e:
             raise Exception(f"发生错误: {e}")
-
-    def list_voices(self):
-        voices = self.storage.list_voices()
-        return voices
-
-    def delete_voice(self, voice_name):
-        return self.storage.delete_voice(voice_name)

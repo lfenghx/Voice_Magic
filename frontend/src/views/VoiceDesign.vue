@@ -22,7 +22,7 @@
               :rows="3"
               placeholder="例如：温柔的女声，音色甜美，语速适中"
             />
-            <div style="margin-top: 10px;">
+            <div v-if="remote_tts_env" style="margin-top: 10px;">
               <el-button
                 type="primary"
                 @click="optimizePrompt"
@@ -117,6 +117,7 @@
               v-model="selectedVoice"
               placeholder="请选择音色"
               style="width: 100%"
+              @change="handleVoiceChange"
             >
               <el-option
                 v-for="voice in designVoices"
@@ -169,6 +170,8 @@ import api from '@/api'
 const router = useRouter()
 const voiceStore = useVoiceStore()
 
+const remote_tts_env = import.meta.env.VITE_QWEN3_TTS_ENV === 'aliyun'
+
 const form = ref({
   voice_prompt: '',
   preview_text: '你好，这是我的声音。',
@@ -177,10 +180,10 @@ const form = ref({
 })
 
 const selectedVoice = ref('')
+const refText = ref('')
 const ttsText = ref('')
 const audioUrl = ref('')
 const synthesizing = ref(false)
-const settingsVisible = ref(false)
 const audioRefs = ref({})
 const optimizing = ref(false)
 
@@ -242,8 +245,6 @@ const createWavUrl = (chunks) => {
 const goBack = () => {
   router.push('/')
 }
-
-const showSettings = () => {}
 
 const toSlug = async (s) => {
   const isAscii = /^[a-zA-Z0-9\-\s]+$/.test(s || '')
@@ -307,6 +308,14 @@ const createVoice = async () => {
 
 const selectVoice = (voice) => {
   selectedVoice.value = voice.voice_name
+  refText.value = voice.ref_text
+}
+
+const handleVoiceChange = (voiceName) => {
+  const voice = designVoices.value.find(v => v.voice_name === voiceName)
+  if (voice) {
+    refText.value = voice.ref_text
+  }
 }
 
 const deleteVoice = async (voiceName) => {
@@ -315,6 +324,7 @@ const deleteVoice = async (voiceName) => {
     ElMessage.success('音色删除成功')
     if (selectedVoice.value === voiceName) {
       selectedVoice.value = ''
+      refText.value = ''
     }
   } catch (error) {
     ElMessage.error('音色删除失败: ' + error.message)
@@ -369,7 +379,8 @@ const synthesize = async () => {
       setTimeout(() => {
         ws.send(JSON.stringify({
           action: 'synthesize',
-          text: ttsText.value
+          text: ttsText.value,
+          ref_text: refText.value
         }))
       }, 500)
     }

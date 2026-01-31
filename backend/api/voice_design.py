@@ -1,7 +1,13 @@
+import os
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import List, Optional
-from services.voice_design_service import VoiceDesignService
+
+if os.getenv("VITE_QWEN3_TTS_ENV") == "aliyun":
+    from services.design_aliyun import DesignServiceAliyun as VoiceDesignService
+else:
+    from services.design_local import DesignServiceLocal as VoiceDesignService
+
 
 router = APIRouter()
 voice_design_service = VoiceDesignService()
@@ -17,6 +23,7 @@ class VoiceResponse(BaseModel):
     description: str
     display_name: str
     preview_file: str
+    ref_text: str
     created_at: str
 
 @router.post("/create", response_model=dict)

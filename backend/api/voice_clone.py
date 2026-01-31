@@ -1,7 +1,13 @@
+import os
 from fastapi import APIRouter, HTTPException, UploadFile, File, Form
 from pydantic import BaseModel
 from typing import List, Optional
-from services.voice_clone_service import VoiceCloneService
+
+if os.getenv("VITE_QWEN3_TTS_ENV") == "aliyun":
+    from services.clone_aliyun import CloneServiceAliyun as VoiceCloneService
+else:
+    from services.clone_local import CloneServiceLocal as VoiceCloneService
+
 
 router = APIRouter()
 voice_clone_service = VoiceCloneService()
@@ -16,30 +22,33 @@ class VoiceResponse(BaseModel):
     description: str
     display_name: str
     audio_file: str
+    ref_text: str
     created_at: str
 
 @router.post("/clone", response_model=dict)
 async def clone_voice(
     audio_file: UploadFile = File(...),
     preferred_name: Optional[str] = Form(None),
-    display_name: Optional[str] = Form(None)
+    display_name: Optional[str] = Form(None),
+    ref_text: Optional[str] = Form(None)
 ):
     try:
         from pathlib import Path
         BASE_DIR = Path(__file__).resolve().parent.parent
         upload_dir = BASE_DIR / "uploads"
         upload_dir.mkdir(exist_ok=True)
-        
+
         file_path = upload_dir / audio_file.filename
         with open(file_path, "wb") as f:
             content = await audio_file.read()
             f.write(content)
-        
+
         try:
             result = voice_clone_service.clone_voice(
                 audio_file=str(file_path),
                 preferred_name=preferred_name,
-                display_name=display_name
+                display_name=display_name,
+                ref_text=ref_text
             )
         except ValueError as e:
             raise HTTPException(status_code=400, detail=str(e))
