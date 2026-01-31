@@ -30,7 +30,7 @@
               <el-radio label="upload">上传音频克隆</el-radio>
             </el-radio-group>
           </el-form-item>
-          <el-form-item label="录音时长">
+          <el-form-item label="录音时长" v-if="cloneMode === 'record'">
             <el-input-number
               v-model="recordDuration"
               :min="1"
@@ -221,7 +221,6 @@ const ref_text = ref('')
 const ttsText = ref('')
 const audioUrl = ref('')
 const synthesizing = ref(false)
-const settingsVisible = ref(false)
 
 const cloneVoices = computed(() => voiceStore.cloneVoices)
 const loading = computed(() => voiceStore.loading)
