@@ -11,6 +11,7 @@ RUN npm install
 
 # 复制源码并构建
 COPY frontend/ ./
+RUN cp .env.example .env
 RUN npm run build
 
 # ==========================================
