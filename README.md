@@ -10,118 +10,94 @@
 
 - **智能音色创造**：通过自然语言描述生成个性化音色
 - **高质量音色克隆**：录制 10 秒语音即可克隆专属音色
+- **多引擎支持**：支持 **阿里云 DashScope API** 与 **本地 Qwen3-TTS 模型** 双引擎切换
+- **双模式运行**：
+  - **云端模式**：低资源占用，快速部署，需网络连接。
+  - **本地模式**：隐私安全，无网络依赖，性能更强（推荐使用 GPU）。
 - **实时音频预览**：立即试听生成的音色效果
-- **流式语音合成**：通过 WebSocket 实现低延迟的语音合成
-- **自动音量增益**：内置音频增益处理，确保生成的语音清晰响亮
-- **响应式设计**：适配各种屏幕尺寸的现代化界面
+- **流式语音合成**：通过 WebSocket 实现极低延迟的语音合成
+- **现代化响应式界面**：美观、易用的 Web 后台管理系统
 
-## 技术栈
+## 运行模式
 
-### 后端
+项目支持两种运行模式，通过环境变量 `QWEN3_TTS_ENV` 进行切换：
 
-- **FastAPI 0.100+** - 高性能 Python Web 框架
-- **WebSocket** - 实时通信协议
-- **DashScope SDK** - 千问 TTS API 客户端
-- **Python 3.8+** - 编程语言
-
-### 前端
-
-- **Vue 3** - 渐进式 JavaScript 框架
-- **Vite** - 下一代前端构建工具
-- **Pinia** - Vue 3 状态管理
-- **Element Plus** - 基于 Vue 3 的 UI 组件库
-- **WebSocket API** - 浏览器实时通信接口
-
-## 项目结构
-
-```
-Voice_Magic/
-├── backend/                    # 后端项目
-│   ├── main.py                # FastAPI 主入口（包含静态文件服务配置）
-│   ├── requirements.txt        # Python 依赖列表
-│   ├── .env.example           # 环境变量示例文件
-│   ├── .env                   # 环境变量（实际使用时配置）
-│   ├── previews/              # 音频预览文件存储目录
-│   ├── api/                   # API 路由模块
-│   │   ├── voice_design.py    # 音色创造 API 端点
-│   │   ├── voice_clone.py     # 音色克隆 API 端点
-│   │   ├── settings.py        # 设置 API 端点
-│   │   └── tts.py            # TTS WebSocket API 端点
-│   ├── services/              # 业务逻辑层
-│   │   ├── voice_design_service.py  # 音色创造业务逻辑
-│   │   ├── voice_clone_service.py   # 音色克隆业务逻辑
-│   │   └── tts_service.py           # TTS 流式服务逻辑
-│   ├── models/                # 数据模型定义
-│   │   └── schemas.py        # Pydantic 模型定义
-│   ├── utils/                 # 工具函数
-│   │   └── storage.py        # 文件和数据存储工具
-│   └── data/                  # 数据存储目录
-│       ├── voices.json        # 创造的音色数据
-│       ├── cloned_voices.json # 克隆的音色数据
-│       └── settings.json      # 应用设置
-├── frontend/                  # 前端项目
-│   ├── src/
-│   │   ├── main.js            # Vue 应用入口
-│   │   ├── App.vue            # 根组件
-│   │   ├── router/            # Vue Router 配置
-│   │   ├── views/             # 页面组件
-│   │   │   ├── Home.vue       # 首页
-│   │   │   ├── VoiceDesign.vue # 音色创造页面
-│   │   │   └── VoiceClone.vue  # 音色克隆页面
-│   │   ├── components/        # 可复用组件
-│   │   │   └── SettingsModal.vue # 设置弹窗组件
-│   │   ├── api/               # API 调用封装
-│   │   └── stores/            # Pinia 状态管理
-│   ├── public/                # 静态资源
-│   ├── package.json           # npm 依赖
-│   └── vite.config.js         # Vite 配置
-└── README.md                  # 项目说明文档
-```
+1.  **aliyun (默认)**：使用阿里云 DashScope 服务。需要配置 `DASHSCOPE_API_KEY`。适用于大多数用户，无需昂贵的 GPU 资源。
+2.  **local**：在本地运行 Qwen3-TTS 模型。需要 NVIDIA GPU（建议 RTX 30 系列及以上）和 CUDA 环境。适用于追求极致响应速度和隐私的用户。
 
 ## 快速开始
 
 ### 1. 环境准备
 
-#### 环境准备
+- **如果是本地模式**：需要安装 NVIDIA Driver, CUDA 12.1+, 和 NVIDIA Container Toolkit (用于 Docker)。
+- **如果是云端模式**：只需基础 Docker 环境或 Python 环境。
+- **通用**：获取 [阿里云 API Key](https://help.aliyun.com/zh/model-studio/get-api-key)（仅云端模式需要）。
 
-- Python 3.8+ （推荐使用 Python 3.10）
-- Node.js 16+ （推荐使用 Node.js 18+）
-- npm 或 yarn 包管理工具
+### 2. Docker 部署 (推荐)
 
-### 2. 本地开发模式
+这是最简单的运行方式，所有依赖已打包。
 
-#### 2.1 后端设置
+#### 2.1 云端模式 (Aliyun API)
+
+```bash
+# 1. 复制 .env.example 并更名为 .env，填入 API Key
+cp .env.example .env
+
+# 2. 启动容器
+docker compose up -d
+```
+
+*注意：默认镜像标签为 `aliyun`。如果需要手动指定，修改 `docker-compose.yml` 中的 image。*
+
+#### 2.2 本地模式 (GPU 加速)
+
+```bash
+# 1. 修改 .env 配置文件
+# QWEN3_TTS_ENV=local
+
+# 2. 修改 docker-compose.yml 使用 local 镜像标签
+# image: yuzhiheng/voice-magic:local
+
+# 3. 启动并开启 GPU 支持
+docker compose up -d
+```
+
+### 3. 本地开发模式
+
+如果您想在本地直接运行源码：
+
+#### 3.1 后端设置
 
 ```bash
 # 进入后端目录
 cd backend
 
-# 创建并激活虚拟环境（可选但推荐）
-python -m venv venv
-# Windows: venv\Scripts\activate
-# Linux/Mac: source venv/bin/activate
-
 # 安装依赖
 pip install -r requirements.txt
 
+# 如果使用本地模型，还需安装 torch 和 qwen-tts
+# pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+# pip install qwen-tts
+
 # 配置环境变量
-# 复制示例文件并修改
 cp .env.example .env
-# 编辑 .env 文件，填入你的千问 API Key
+# 编辑 .env 文件，设置 QWEN3_TTS_ENV 和 DASHSCOPE_API_KEY
 ```
 
 环境变量说明：
 
-````env
-# 千问 API Key（必填）
+```env
+# 运行环境: aliyun 或 local
+QWEN3_TTS_ENV=aliyun
+
+# 阿里云 API Key（aliyun 模式下必填）
 DASHSCOPE_API_KEY=your_api_key_here
+```
 
 ```bash
 # 启动后端服务
 python main.py
-````
-
-后端服务将在 http://localhost:8000 启动
+```
 
 #### 3.2 前端设置
 
@@ -136,7 +112,46 @@ npm install
 npm run dev
 ```
 
-前端服务将在 http://localhost:3000 启动
+### 4. Docker 镜像构建
+
+如果您希望从源码自行构建镜像，可以使用以下命令：
+
+#### 4.1 构建云端版 (aliyun)
+```bash
+docker build -t voice-magic:aliyun -f Dockerfile.aliyun .
+```
+
+#### 4.2 构建本地版 (local)
+```bash
+docker build -t voice-magic:local -f Dockerfile.local .
+```
+
+## 技术栈
+
+### 后端
+- **FastAPI** / **Uvicorn** - Web 框架与服务器
+- **Qwen3-TTS** - 千问语音模型核心
+- **DashScope SDK** - 阿里云模型服务接入
+- **WebSocket** - 实现流式音频传输
+
+### 前端
+- **Vue 3** / **Vite** - 现代前端框架与构建工具
+- **Element Plus** - UI 组件库
+- **Pinia** - 状态管理
+
+## 项目结构
+
+```text
+Voice_Magic/
+├── backend/            # Python 后端代码
+│   ├── api/            # 接口定义 (TTS, 克隆, 创作)
+│   ├── services/       # 业务逻辑 (阿里云/本地双引擎实现)
+│   └── main.py         # 启动入口
+├── frontend/           # Vue 前端代码
+├── Dockerfile.aliyun   # 云端模式 Docker 配置文件
+├── Dockerfile.local    # 本地模式 Docker 配置文件
+└── docker-compose.yml  # Docker 编排配置
+```
 
 ## 功能说明
 
@@ -240,6 +255,15 @@ A: 虽然模型支持跨物种克隆，但 VAD 算法主要针对人声优化，
 MIT License
 
 ## 更新日志
+
+### v1.2.0 (2026-01-31)
+
+- **新增功能**：
+  - 新增“官方音色”模块，预置多种高质量官方音色。
+  - 支持本地模型运行，可在无网络环境下使用基础音色功能。
+- **架构优化**：
+  - 重构后端服务，支持阿里云 API 与本地模型双引擎切换。
+  - 优化项目版本管理，同步版本号至 v1.2.0。
 
 ### v1.1.0 (2025-12-28)
 

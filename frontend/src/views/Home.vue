@@ -4,7 +4,7 @@
       <h1 class="title">元视界AI妙妙屋</h1>
       <p class="subtitle">魔法语音</p>
     </div>
-    
+
     <div class="content">
       <div class="mode-card" @click="goToVoiceDesign">
         <div class="card-icon">🎨</div>
@@ -12,26 +12,31 @@
         <p class="card-desc">通过文字描述创造个性化音色</p>
         <div class="card-arrow">→</div>
       </div>
-      
+
       <div class="mode-card" @click="goToVoiceClone">
         <div class="card-icon">🎤</div>
         <h2 class="card-title">音色克隆</h2>
         <p class="card-desc">录制声音并克隆为专属音色</p>
         <div class="card-arrow">→</div>
       </div>
+
+      <div class="mode-card" @click="goToOfficialVoice">
+        <div class="card-icon">🎙️</div>
+        <h2 class="card-title">官方音色</h2>
+        <p class="card-desc">使用官方预置的专业音色</p>
+        <div class="card-arrow">→</div>
+      </div>
     </div>
-    
-    
+
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
 import { useRouter } from 'vue-router'
- 
+
 
 const router = useRouter()
- 
+
 
 const goToVoiceDesign = () => {
   router.push('/voice-design')
@@ -41,7 +46,11 @@ const goToVoiceClone = () => {
   router.push('/voice-clone')
 }
 
- 
+const goToOfficialVoice = () => {
+  router.push('/official-voice')
+}
+
+
 </script>
 
 <style scoped>
