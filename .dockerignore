@@ -1,0 +1,11 @@
+backend/.venv
+.venv
+__pycache__
+*.pyc
+
+# Data
+backend/data/
+backend/uploads/
+backend/previews/
+**/*.wav
+**/*.mp3

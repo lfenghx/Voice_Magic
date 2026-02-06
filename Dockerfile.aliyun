@@ -1,0 +1,57 @@
+# ==========================================
+# 第一阶段：构建前端
+# ==========================================
+FROM node:20-slim AS frontend-builder
+
+WORKDIR /app/frontend
+
+# 复制依赖文件并安装 (利用 Docker 缓存)
+COPY frontend/package*.json ./
+RUN npm install
+
+# 复制源码并构建
+COPY frontend/ ./
+RUN cp .env.example .env
+RUN npm run build
+
+# ==========================================
+# 第二阶段：最终运行环境
+# ==========================================
+FROM python:3.11-slim
+
+# 设置工作目录
+WORKDIR /app
+
+# 安装必要的系统依赖
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# 从官方 uv 镜像中安装 uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uv/bin/
+ENV PATH="/uv/bin:${PATH}"
+
+# 复制后端依赖文件并安装 (使用 uv)
+COPY backend/requirements.txt ./
+RUN uv pip install --no-cache -r requirements.txt --system
+
+# 复制后端代码
+COPY backend/ ./
+
+# 确保 previews 目录存在 (虽然 main.py 也会检查，但在这里创建更规范)
+RUN mkdir -p previews
+
+# 从第一阶段复制构建好的前端静态文件到后端 static 目录下
+# 注意：我们在 backend/main.py 中配置了从 static 目录服务静态文件
+COPY --from=frontend-builder /app/frontend/dist /app/static
+
+# 设置环境变量默认值 (可以在运行时通过 -e 覆盖)
+ENV QWEN3_TTS_ENV=aliyun
+ENV PORT=8000
+# 如果使用阿里云 DashScope，需要在运行容器时传入 DASHSCOPE_API_KEY
+
+# 暴露端口
+EXPOSE 8000
+
+# 启动命令
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]

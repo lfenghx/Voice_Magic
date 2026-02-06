@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import Home from '@/views/Home.vue'
 import VoiceDesign from '@/views/VoiceDesign.vue'
 import VoiceClone from '@/views/VoiceClone.vue'
+import OfficialVoice from '@/views/OfficialVoice.vue'
 
 const routes = [
   {
@@ -18,6 +19,11 @@ const routes = [
     path: '/voice-clone',
     name: 'VoiceClone',
     component: VoiceClone
+  },
+  {
+    path: '/official-voice',
+    name: 'OfficialVoice',
+    component: OfficialVoice
   }
 ]
 

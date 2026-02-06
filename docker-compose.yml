@@ -1,0 +1,18 @@
+services:
+  voice-magic:
+    image: yuzhiheng/voice-magic:aliyun # Tag 可选: aliyun, local, local-flash-attn
+    container_name: voice-magic
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    volumes:
+      - voice_magic_data:/app/data
+      - voice_magic_previews:/app/previews
+      - voice_magic_uploads:/app/uploads
+    restart: always
+
+volumes:
+  voice_magic_data:
+  voice_magic_previews:
+  voice_magic_uploads:
